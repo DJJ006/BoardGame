@@ -15,29 +15,38 @@ public class GameSceneSetup : MonoBehaviour
         // Load data saved in main menu
         saveLoadScript.LoadGame();
 
-        int charIndex = Mathf.Clamp(saveLoadScript.SelectedCharacterIndex, 0, playerPrefabs.Length - 1);
-        string playerName = saveLoadScript.SelectedCharacterName;
-
-        // Instantiate the selected character as Player 0
-        PlayerToken playerInstance = Instantiate(playerPrefabs[charIndex]);
-
-        // Force Y to 65 (keep X/Z from prefab)
-        Vector3 p = playerInstance.transform.position;
-        playerInstance.transform.position = new Vector3(p.x, 65f, p.z);
-
-        playerInstance.name = string.IsNullOrEmpty(playerName) ? "Player1" : playerName;
-
-        // Ensure boardManager has a players list and assign
         if (boardManager.players == null)
         {
             boardManager.players = new List<PlayerToken>();
         }
         boardManager.players.Clear();
-        boardManager.players.Add(playerInstance);
 
-        // Optionally you can add AI players here if you want:
-        // PlayerToken ai = Instantiate(playerPrefabs[someIndex]);
-        // ai.isAIControlled = true;
-        // boardManager.players.Add(ai);
+        // How many human players were chosen in CharacterSelectScript
+        int playerCount = PlayerPrefs.GetInt("PlayerCount", 1);
+        playerCount = Mathf.Clamp(playerCount, 1, 4);
+
+        for (int i = 0; i < playerCount; i++)
+        {
+            // Read each selected character index saved as "SelectedCharacter_i"
+            int charIndex = PlayerPrefs.GetInt($"SelectedCharacter_{i}", 0);
+            charIndex = Mathf.Clamp(charIndex, 0, playerPrefabs.Length - 1);
+
+            PlayerToken playerInstance = Instantiate(playerPrefabs[charIndex]);
+
+            // Position on board start (CircusBoardManager.Start will snap to tile 0)
+            Vector3 p = playerInstance.transform.position;
+            playerInstance.transform.position = new Vector3(p.x, 65f, p.z);
+
+            // Give each player a name – first from PlayerName, others default
+            string baseName = PlayerPrefs.GetString("PlayerName", "Player");
+            string playerName = (i == 0) ? baseName : $"{baseName} {i + 1}";
+            playerInstance.name = playerName;
+
+            // Mark as human controlled
+            playerInstance.isAIControlled = false;
+            playerInstance.PlayerIndex = i;
+
+            boardManager.players.Add(playerInstance);
+        }
     }
 }

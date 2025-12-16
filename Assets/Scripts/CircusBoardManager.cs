@@ -1,12 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-// Add the following using directive if PlayerToken is in another namespace
-// using YourNamespaceForPlayerToken;
-
-// If PlayerToken is defined in another file in your project, add its using directive here.
-// For example, if it's in the global namespace, no change is needed.
-// If it's in a namespace like "Game.Tokens", uncomment and update the line below:
-//using Game.Tokens;PlayerToken
 
 public class CircusBoardManager : MonoBehaviour
 {
@@ -297,5 +290,50 @@ public class CircusBoardManager : MonoBehaviour
         // If something went wrong, log and return 0 (invalid)
         Debug.LogWarning($"Could not parse dice face '{face}'");
         return 0;
+    }
+
+    /// <summary>
+    /// Play idle animation on the current player's token.
+    /// Hook this to your "Idle" UI button.
+    /// </summary>
+    public void PlayCurrentPlayerIdle()
+    {
+        if (_gameOver || players == null || players.Count == 0) return;
+
+        PlayerToken current = players[_currentPlayerIndex];
+        if (current != null)
+        {
+            current.PlayIdleAnimation();
+        }
+    }
+
+    /// <summary>
+    /// Play walk animation on the current player's token.
+    /// Hook this to your "Walk" UI button.
+    /// </summary>
+    public void PlayCurrentPlayerWalk()
+    {
+        if (_gameOver || players == null || players.Count == 0) return;
+
+        PlayerToken current = players[_currentPlayerIndex];
+        if (current != null)
+        {
+            current.PlayWalkAnimation();
+        }
+    }
+
+    /// <summary>
+    /// Play dying animation on the current player's token.
+    /// Hook this to your "Die" UI button.
+    /// </summary>
+    public void PlayCurrentPlayerDie()
+    {
+        if (_gameOver || players == null || players.Count == 0) return;
+
+        PlayerToken current = players[_currentPlayerIndex];
+        if (current != null)
+        {
+            current.PlayDieAnimation();
+        }
     }
 }
