@@ -10,6 +10,9 @@ public class PlayerToken : MonoBehaviour
     private CircusBoardManager _boardManager;
     private Animator _animator;
 
+    // Make sure this type matches the component you drag in the Inspector
+    public SoundEffectsScript soundEffects;
+
     // Shared Animator parameters
     private const string WalkParamName = "Walk";
     private const string IdleParamName = "Idle";
@@ -26,6 +29,12 @@ public class PlayerToken : MonoBehaviour
         _boardManager = boardManager;
         PlayerIndex = playerIndex;
         EnsureAnimator();
+
+        // if not set from prefab, try to auto‑find shared SoundEffectsScript
+        if (soundEffects == null)
+        {
+            soundEffects = FindObjectOfType<SoundEffectsScript>();
+        }
     }
 
     public IEnumerator MoveToPositionRoutine(Vector3 targetPosition, float duration)
@@ -57,6 +66,9 @@ public class PlayerToken : MonoBehaviour
         {
             t += Time.deltaTime / duration;
             transform.position = Vector3.Lerp(start, targetPosition, t);
+
+            // play step sound on each tile move start, not every frame
+            // (so do NOT call here in every frame)
             yield return null;
         }
 
@@ -194,6 +206,20 @@ public class PlayerToken : MonoBehaviour
     {
         if (_animator == null)
             _animator = GetComponent<Animator>();
+    }
+
+    // Call this from CircusBoardManager when starting a move between tiles:
+    public void PlayStepSound()
+    {
+        if (soundEffects == null)
+        {
+            soundEffects = FindObjectOfType<SoundEffectsScript>();
+        }
+
+        if (soundEffects != null)
+        {
+            soundEffects.PlayWalkStep();
+        }
     }
 }
 

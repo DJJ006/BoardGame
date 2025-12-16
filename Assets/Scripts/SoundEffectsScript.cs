@@ -1,41 +1,62 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class SoundEffectsScript : MonoBehaviour
 {
-    public AudioClip[] soundEffects;
-    public AudioSource audioSource;
-    public void Hover()
+    [Header("Audio Source")]
+    public AudioSource audioSource;          // assign in inspector
+
+    [Header("Clips")]
+    public AudioClip diceHitClip;            // dice landing / hit sound
+    public AudioClip walkStepClip;           // one footstep or short loop
+    public AudioClip winClip;                // win / fanfare sound
+
+    [Header("Button Clips")]
+    public AudioClip buttonHoverClip;        // for OnButton (mouse over / selected)
+    public AudioClip buttonClickClip;        // for ClickedButton (pressed)
+
+    public void OnDice()                     // called when dice is rolled (existing)
     {
-        audioSource.PlayOneShot(soundEffects[0]);
+        PlayOneShot(buttonClickClip);
     }
 
-    public void Click()
+    public void PlayDiceHit()
     {
-        audioSource.PlayOneShot(soundEffects[1]);
+        PlayOneShot(diceHitClip);
     }
 
-    public void OnDice()
+    public void PlayWalkStep()
     {
-        audioSource.loop = true;
-        audioSource.clip = soundEffects[2];
-        audioSource.Play();
+        PlayOneShot(walkStepClip);
     }
 
-    public void CancelButton()
+    public void PlayWin()
     {
-        audioSource.PlayOneShot(soundEffects[3]);
+        PlayOneShot(winClip);
     }
 
-    public void PlayButton()
+    // === NEW: UI button sounds ===
+
+    /// <summary>
+    /// Call this from EventTrigger pointer enter / select, or from navigation highlight.
+    /// </summary>
+    public void OnButton()                   // hover / focus sound
     {
-        audioSource.PlayOneShot(soundEffects[4]);
+        PlayOneShot(buttonHoverClip);
     }
 
-    public void NameField()
+    /// <summary>
+    /// Call this from Button OnClick for normal button presses.
+    /// </summary>
+    public void ClickedButton()
     {
-        audioSource.PlayOneShot(soundEffects[5]);
+        PlayOneShot(buttonClickClip);
     }
 
+    private void PlayOneShot(AudioClip clip)
+    {
+        if (audioSource != null && clip != null)
+        {
+            audioSource.PlayOneShot(clip);
+        }
+    }
 }

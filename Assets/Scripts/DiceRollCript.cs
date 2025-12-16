@@ -14,6 +14,8 @@ public class DiceRollCript : MonoBehaviour
     public bool isLanded = false;
     public bool firstThrow = false;
 
+    public SoundEffectsScript soundEffects;   // assign in inspector (same as CircusBoardManager.soundEffects)
+
     private void Awake()
     {
         startPosition = transform.position;
@@ -37,6 +39,12 @@ public class DiceRollCript : MonoBehaviour
         float forceX = Random.Range(0, maxRandForceVal);
         float forceY = Random.Range(0, maxRandForceVal);
         float forceZ = Random.Range(0, maxRandForceVal);
+
+        // play dice‑throw sound just as we launch it into the air
+        if (soundEffects != null)
+        {
+            soundEffects.PlayDiceHit();
+        }
 
         rBody.AddForce(Vector3.up * Random.Range(800, startRollingForce));
         rBody.AddTorque(forceX, forceY, forceZ);
@@ -86,5 +94,12 @@ public class DiceRollCript : MonoBehaviour
                 }
             }
         }
+    }
+
+    // still used by SideDetectScript to tell the logic that dice stopped,
+    // but we no longer play the impact sound here
+    public void OnDiceLanded()
+    {
+        isLanded = true;
     }
 }

@@ -28,17 +28,18 @@ public class SideDetectScript : MonoBehaviour
         if (diceRollScript == null || diceBody == null)
             return;
 
-        // Only care while the die is actually rolling
         if (!diceRollScript.firstThrow)
             return;
 
-        // Check if dice is basically stopped
         if (diceBody.velocity.magnitude < landedVelocityThreshold &&
             diceBody.angularVelocity.magnitude < landedVelocityThreshold)
         {
-            diceRollScript.isLanded = true;
-            // Store the numeric value as text, but it is now guaranteed 1–6
             diceRollScript.diceFaceNum = faceValue.ToString();
+
+            if (!diceRollScript.isLanded)
+            {
+                diceRollScript.OnDiceLanded();
+            }
         }
         else
         {

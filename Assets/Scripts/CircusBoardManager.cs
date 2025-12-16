@@ -1,32 +1,36 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using TMPro;
 
 public class CircusBoardManager : MonoBehaviour
 {
     [Header("Board Setup")]
-    [Tooltip("Ordered list of board tiles from start (0) to finish (last index).")]
     public List<BoardTile> boardTiles = new List<BoardTile>();
 
     [Header("Players")]
-    [Tooltip("All player pieces in play, in turn order (0 = first player).")]
     public List<PlayerToken> players = new List<PlayerToken>();
 
-    [Tooltip("How many board steps a dice value of '1' equals (usually 1).")]
     public int stepsPerFace = 1;
 
     [Header("References")]
-    [Tooltip("Dice script used to roll and detect landed face.")]
     public DiceRollCript diceRoll;
-
-    [Tooltip("Optional: sound effects for moves, win, etc.")]
     public SoundEffectsScript soundEffects;
+
+    [Header("Win UI")]
+    public GameObject winPanel;          // assign panel in scene
+    public TMP_Text winMessageText;
+    public TMP_Text winTimeText;
+    public TMP_Text winMovesText;
+    public TMP_Text winPointsText;
 
     private int _currentPlayerIndex;
     private bool _isProcessingTurn;
     private bool _gameOver;
-
-    // Track per-player state (lose next turn, etc.)
     private bool[] _skipNextTurn;
+
+    private int _totalDiceRolls;
+    private float _elapsedTime;
 
     private void Awake()
     {
@@ -34,16 +38,19 @@ public class CircusBoardManager : MonoBehaviour
         {
             Debug.LogError("CircusBoardManager: No board tiles assigned.");
         }
+
+        if (winPanel != null)
+        {
+            winPanel.SetActive(false);
+        }
     }
 
     private void Start()
     {
-        // Ensure tiles list is sorted by index
         boardTiles.Sort((a, b) => a.index.CompareTo(b.index));
 
         _skipNextTurn = new bool[players.Count];
 
-        // Initialize all players to start tile (index 0)
         for (int i = 0; i < players.Count; i++)
         {
             players[i].Initialize(this, i);
@@ -53,34 +60,32 @@ public class CircusBoardManager : MonoBehaviour
         _currentPlayerIndex = 0;
         _isProcessingTurn = false;
         _gameOver = false;
+        _totalDiceRolls = 0;
+        _elapsedTime = 0f;
     }
 
     private void Update()
     {
+        if (!_gameOver)
+        {
+            _elapsedTime += Time.deltaTime;
+        }
+
         if (_gameOver || diceRoll == null)
             return;
 
-        // When dice has landed and we are not already processing a turn,
-        // process movement for the active player.
         if (diceRoll.isLanded && _isProcessingTurn)
         {
-            // Prevent double-processing: immediately set flag false, then process
             _isProcessingTurn = false;
             HandleDiceResultForCurrentPlayer();
         }
     }
 
-    /// <summary>
-    /// Called externally (e.g., by a UI button) to start the current player's dice roll.
-    /// </summary>
     public void OnRollButtonPressed()
     {
         if (_gameOver || _isProcessingTurn)
             return;
 
-        PlayerToken currentPlayer = players[_currentPlayerIndex];
-
-        // Skip-turn logic
         if (_skipNextTurn[_currentPlayerIndex])
         {
             Debug.Log($"Player {_currentPlayerIndex} skips this turn.");
@@ -95,10 +100,10 @@ public class CircusBoardManager : MonoBehaviour
         }
 
         _isProcessingTurn = true;
+        _totalDiceRolls++;
 
-        // RESET and ROLL THE DICE PHYSICALLY
-        diceRoll.ResetDice();   // go back to start position, clear flags
-        diceRoll.RollNow();     // actually apply forces to the rigidbody
+        diceRoll.ResetDice();
+        diceRoll.RollNow();
     }
 
     private System.Collections.IEnumerator AIRollRoutine()
@@ -179,6 +184,13 @@ public class CircusBoardManager : MonoBehaviour
 
         for (int i = fromIndex + 1; i <= targetIndex; i++)
         {
+            // play one step sound each time we enter a new tile
+            if (soundEffects != null && players[playerIndex] != null)
+            {
+                // let the token trigger a step sound; falls back to SoundEffectsScript
+                players[playerIndex].PlayStepSound();
+            }
+
             MovePlayerToIndex(playerIndex, i, instant: false);
             yield return new WaitForSeconds(0.3f);
         }
@@ -257,9 +269,9 @@ public class CircusBoardManager : MonoBehaviour
     private void HandleWin(int playerIndex)
     {
         _gameOver = true;
+        _isProcessingTurn = false;
         Debug.Log($"Player {playerIndex} wins!");
 
-        // Play win animation on the winning token
         if (players != null && playerIndex >= 0 && playerIndex < players.Count)
         {
             PlayerToken winner = players[playerIndex];
@@ -271,11 +283,82 @@ public class CircusBoardManager : MonoBehaviour
 
         if (soundEffects != null)
         {
-            // Reuse any clip you like as "win", or extend SoundEffectsScript
-            soundEffects.PlayButton();
+            // play dedicated win clip instead of generic button
+            soundEffects.PlayWin();
         }
 
-        // TODO: show win screen / change scene via SceneChanger, etc.
+        ShowWinPanel(playerIndex);
+        SaveWinnerToLeaderboard(playerIndex);
+    }
+
+    private void ShowWinPanel(int playerIndex)
+    {
+        if (winPanel == null)
+            return;
+
+        winPanel.SetActive(true);
+
+        string winnerName = players[playerIndex] != null
+            ? players[playerIndex].name
+            : $"Player {playerIndex + 1}";
+
+        if (winMessageText != null)
+        {
+            winMessageText.text = $"{winnerName} wins!";
+        }
+
+        if (winTimeText != null)
+        {
+            int totalSeconds = Mathf.RoundToInt(_elapsedTime);
+            int minutes = totalSeconds / 60;
+            int seconds = totalSeconds % 60;
+            winTimeText.text = $"Time: {minutes:00}:{seconds:00}";
+        }
+
+        if (winMovesText != null)
+        {
+            winMovesText.text = $"Moves: {_totalDiceRolls}";
+        }
+
+        int points = CalculatePoints(_elapsedTime, _totalDiceRolls);
+        if (winPointsText != null)
+        {
+            winPointsText.text = $"Points: {points}";
+        }
+    }
+
+    private int CalculatePoints(float timeSeconds, int moves)
+    {
+        // simple scoring example – tweak as you like
+        int timePenalty = Mathf.RoundToInt(timeSeconds);
+        int movePenalty = moves * 5;
+        int baseScore = 2000;
+        int score = baseScore - timePenalty - movePenalty;
+        return Mathf.Max(score, 0);
+    }
+
+    private void SaveWinnerToLeaderboard(int playerIndex)
+    {
+        string winnerName = players[playerIndex] != null
+            ? players[playerIndex].name
+            : $"Player {playerIndex + 1}";
+
+        int points = CalculatePoints(_elapsedTime, _totalDiceRolls);
+
+        LeaderboardData leaderboard = LeaderboardData.Load();
+        leaderboard.AddEntry(winnerName, points);
+        leaderboard.Save();
+    }
+
+    // UI buttons on win panel
+    public void OnWinPanelRestart()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+    public void OnWinPanelMainMenu()
+    {
+        SceneManager.LoadScene("MainMenu");
     }
 
     private int ParseDiceFace(string face)

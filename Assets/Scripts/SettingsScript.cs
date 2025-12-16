@@ -5,21 +5,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// Simple settings manager:
-/// - change resolution (uses Screen.resolutions)
-/// - change SFX volume (applies to a provided SFX AudioSource)
-/// - change BGM (music) volume (applies to a provided music AudioSource)
-/// Persist values to PlayerPrefs so changes survive runs.
-/// Hook UI elements in the inspector: a TMP_Dropdown or legacy Dropdown for resolutions,
-/// Slider(s) for volumes, and AudioSource references for SFX and Music.
-/// 
-/// Behavior:
-/// - UI changes apply immediately (so player can preview)
-/// - Changes are persisted only when SaveSettings() is called
-/// - DiscardSettings() reverts UI and applied values to the last saved state
-/// - ResetToDefaults() restores safe default values (applies them but does not persist)
-/// </summary>
 public class SettingsScript : MonoBehaviour
 {
     // UI (assign at least one resolution dropdown: TMP or legacy)
@@ -29,6 +14,9 @@ public class SettingsScript : MonoBehaviour
     // Volume sliders (assign in inspector)
     public Slider sfxVolumeSlider;
     public Slider musicVolumeSlider;
+
+    // NEW: fullscreen toggle (assign in inspector)
+    public Toggle fullscreenToggle;
 
     // Audio sources to control (assign in inspector)
     // - sfxAudioSource should be the AudioSource used by SoundEffectsScript (or a shared SFX AudioSource)
@@ -40,18 +28,21 @@ public class SettingsScript : MonoBehaviour
     private List<Resolution> availableResolutions = new List<Resolution>();
 
     // PlayerPrefs keys
-    private const string PREF_RES_INDEX = "ResolutionIndex";
-    private const string PREF_SFX_VOLUME = "SFXVolume";
-    private const string PREF_BGM_VOLUME = "BGMVolume";
+    private const string PREF_RES_INDEX   = "ResolutionIndex";
+    private const string PREF_SFX_VOLUME  = "SFXVolume";
+    private const string PREF_BGM_VOLUME  = "BGMVolume";
+    private const string PREF_FULLSCREEN  = "FullscreenEnabled";
 
     // Default values used by ResetToDefaults
     private const float DEFAULT_SFX_VOLUME = 1f;
     private const float DEFAULT_BGM_VOLUME = 1f;
+    private const bool  DEFAULT_FULLSCREEN = true;
 
     // Last persisted values — used for discard logic
-    private int savedResolutionIndex;
+    private int   savedResolutionIndex;
     private float savedSfxVolume;
     private float savedBgmVolume;
+    private bool  savedFullscreen;
 
     void Awake()
     {
@@ -101,6 +92,21 @@ public class SettingsScript : MonoBehaviour
             sfxVolumeSlider.SetValueWithoutNotify(savedSfxVolume);
         if (musicVolumeSlider != null)
             musicVolumeSlider.SetValueWithoutNotify(savedBgmVolume);
+
+        // Load fullscreen flag (default = current Screen.fullScreen or DEFAULT_FULLSCREEN)
+        if (PlayerPrefs.HasKey(PREF_FULLSCREEN))
+        {
+            savedFullscreen = PlayerPrefs.GetInt(PREF_FULLSCREEN, DEFAULT_FULLSCREEN ? 1 : 0) != 0;
+        }
+        else
+        {
+            savedFullscreen = Screen.fullScreen; // use current setting first run
+        }
+
+        ApplyFullscreen(savedFullscreen);
+
+        if (fullscreenToggle != null)
+            fullscreenToggle.SetIsOnWithoutNotify(savedFullscreen);
 
         // Load resolution index or pick current screen resolution index
         savedResolutionIndex = PlayerPrefs.HasKey(PREF_RES_INDEX) ? PlayerPrefs.GetInt(PREF_RES_INDEX) : -1;
@@ -152,23 +158,19 @@ public class SettingsScript : MonoBehaviour
             musicVolumeSlider.onValueChanged.RemoveAllListeners();
             musicVolumeSlider.onValueChanged.AddListener(ApplyMusicVolumeFromUI);
         }
+
+        if (fullscreenToggle != null)
+        {
+            fullscreenToggle.onValueChanged.RemoveAllListeners();
+            fullscreenToggle.onValueChanged.AddListener(ApplyFullscreenFromUI);
+        }
     }
 
     // UI -> apply-only handlers (do not write PlayerPrefs)
-    private void ApplyResolutionByIndexFromUI(int index)
-    {
-        ApplyResolution(index);
-    }
-
-    private void ApplySfxVolumeFromUI(float normalizedVolume)
-    {
-        ApplySfxVolume(normalizedVolume);
-    }
-
-    private void ApplyMusicVolumeFromUI(float normalizedVolume)
-    {
-        ApplyMusicVolume(normalizedVolume);
-    }
+    private void ApplyResolutionByIndexFromUI(int index) => ApplyResolution(index);
+    private void ApplySfxVolumeFromUI(float v)           => ApplySfxVolume(v);
+    private void ApplyMusicVolumeFromUI(float v)         => ApplyMusicVolume(v);
+    private void ApplyFullscreenFromUI(bool isFullscreen)=> ApplyFullscreen(isFullscreen);
 
     // Public API for explicit save flow
 
@@ -197,8 +199,9 @@ public class SettingsScript : MonoBehaviour
             sfxVol = sfxVolumeSlider.value;
         else if (sfxAudioSource != null)
             sfxVol = sfxAudioSource.volume;
-        PlayerPrefs.SetFloat(PREF_SFX_VOLUME, Mathf.Clamp01(sfxVol));
-        savedSfxVolume = Mathf.Clamp01(sfxVol);
+        sfxVol = Mathf.Clamp01(sfxVol);
+        PlayerPrefs.SetFloat(PREF_SFX_VOLUME, sfxVol);
+        savedSfxVolume = sfxVol;
 
         // Music volume: prefer slider value, fallback to music audio source volume
         float bgmVol = DEFAULT_BGM_VOLUME;
@@ -206,8 +209,13 @@ public class SettingsScript : MonoBehaviour
             bgmVol = musicVolumeSlider.value;
         else if (musicAudioSource != null)
             bgmVol = musicAudioSource.volume;
-        PlayerPrefs.SetFloat(PREF_BGM_VOLUME, Mathf.Clamp01(bgmVol));
-        savedBgmVolume = Mathf.Clamp01(bgmVol);
+        bgmVol = Mathf.Clamp01(bgmVol);
+        PlayerPrefs.SetFloat(PREF_BGM_VOLUME, bgmVol);
+        savedBgmVolume = bgmVol;
+
+        bool fs = fullscreenToggle != null ? fullscreenToggle.isOn : Screen.fullScreen;
+        PlayerPrefs.SetInt(PREF_FULLSCREEN, fs ? 1 : 0);
+        savedFullscreen = fs;
 
         PlayerPrefs.Save();
         Debug.Log("SettingsScript: Settings saved via SaveSettings().");
@@ -235,6 +243,10 @@ public class SettingsScript : MonoBehaviour
         if (musicVolumeSlider != null)
             musicVolumeSlider.SetValueWithoutNotify(savedBgmVolume);
         ApplyMusicVolume(savedBgmVolume);
+
+        if (fullscreenToggle != null)
+            fullscreenToggle.SetIsOnWithoutNotify(savedFullscreen);
+        ApplyFullscreen(savedFullscreen);
 
         Debug.Log("SettingsScript: Changes discarded, reverted to last saved settings.");
     }
@@ -268,6 +280,10 @@ public class SettingsScript : MonoBehaviour
         if (musicVolumeSlider != null)
             musicVolumeSlider.SetValueWithoutNotify(DEFAULT_BGM_VOLUME);
         ApplyMusicVolume(DEFAULT_BGM_VOLUME);
+
+        if (fullscreenToggle != null)
+            fullscreenToggle.SetIsOnWithoutNotify(DEFAULT_FULLSCREEN);
+        ApplyFullscreen(DEFAULT_FULLSCREEN);
 
         Debug.Log("SettingsScript: Reset to defaults (applied, not saved).");
     }
@@ -311,5 +327,11 @@ public class SettingsScript : MonoBehaviour
             if (found != null)
                 found.volume = Mathf.Clamp01(normalizedVolume);
         }
+    }
+
+    private void ApplyFullscreen(bool isFullscreen)
+    {
+        Screen.fullScreen = isFullscreen;
+        Debug.Log($"SettingsScript: Fullscreen set to {isFullscreen}");
     }
 }

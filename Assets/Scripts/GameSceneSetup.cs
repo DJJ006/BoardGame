@@ -12,8 +12,11 @@ public class GameSceneSetup : MonoBehaviour
 
     private void Awake()
     {
-        // Load data saved in main menu
-        saveLoadScript.LoadGame();
+        // Load data saved in main menu (kept in case you use it for other things)
+        if (saveLoadScript != null)
+        {
+            saveLoadScript.LoadGame();
+        }
 
         if (boardManager.players == null)
         {
@@ -37,9 +40,8 @@ public class GameSceneSetup : MonoBehaviour
             Vector3 p = playerInstance.transform.position;
             playerInstance.transform.position = new Vector3(p.x, 65f, p.z);
 
-            // Give each player a name – first from PlayerName, others default
-            string baseName = PlayerPrefs.GetString("PlayerName", "Player");
-            string playerName = (i == 0) ? baseName : $"{baseName} {i + 1}";
+            // Read per‑player name saved from CharacterSelectScript
+            string playerName = PlayerPrefs.GetString($"PlayerName_{i}", $"Player {i + 1}");
             playerInstance.name = playerName;
 
             // Mark as human controlled
