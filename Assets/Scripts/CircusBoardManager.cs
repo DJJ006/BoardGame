@@ -87,7 +87,7 @@ public class CircusBoardManager : MonoBehaviour
 
         PlayerToken currentPlayer = players[_currentPlayerIndex];
 
-        // If this player must skip turn, handle and advance.
+        // Skip-turn logic
         if (_skipNextTurn[_currentPlayerIndex])
         {
             Debug.Log($"Player {_currentPlayerIndex} skips this turn.");
@@ -96,23 +96,16 @@ public class CircusBoardManager : MonoBehaviour
             return;
         }
 
-        // Human player: wait for click on dice (your DiceRollCript already handles mouse click).
-        // Here, we only mark that we are in a turn and let DiceRollCript roll on click.
-        if (!currentPlayer.isAIControlled)
+        if (soundEffects != null)
         {
-            if (soundEffects != null)
-            {
-                soundEffects.OnDice();
-            }
+            soundEffects.OnDice();
+        }
 
-            _isProcessingTurn = true;
-            diceRoll.firstThrow = false; // allow new roll
-        }
-        else
-        {
-            // AI: trigger a roll programmatically.
-            StartCoroutine(AIRollRoutine());
-        }
+        _isProcessingTurn = true;
+
+        // RESET and ROLL THE DICE PHYSICALLY
+        diceRoll.ResetDice();   // go back to start position, clear flags
+        diceRoll.RollNow();     // actually apply forces to the rigidbody
     }
 
     private System.Collections.IEnumerator AIRollRoutine()
@@ -239,16 +232,20 @@ public class CircusBoardManager : MonoBehaviour
 
         token.BoardIndex = tileIndex;
 
-        Vector3 targetPos = tile.transform.position;
+        Vector3 tilePos = tile.transform.position;
+
+        // <<< Force your desired Y here >>>
+        const float playerHeightY = 65f;               // adjust as needed
+        Vector3 targetPos = new Vector3(tilePos.x, playerHeightY, tilePos.z);
+
         if (instant)
         {
             token.transform.position = targetPos;
         }
         else
         {
-            // Simple Lerp move
             token.StopAllCoroutines();
-            token.StartCoroutine(token.MoveToPositionRoutine(targetPos, 0.25f));
+            token.StartCoroutine(token.MoveToPositionRoutine(targetPos, 0.65f));
         }
     }
 
@@ -269,6 +266,16 @@ public class CircusBoardManager : MonoBehaviour
         _gameOver = true;
         Debug.Log($"Player {playerIndex} wins!");
 
+        // Play win animation on the winning token
+        if (players != null && playerIndex >= 0 && playerIndex < players.Count)
+        {
+            PlayerToken winner = players[playerIndex];
+            if (winner != null)
+            {
+                winner.PlayWinAnimation();
+            }
+        }
+
         if (soundEffects != null)
         {
             // Reuse any clip you like as "win", or extend SoundEffectsScript
@@ -280,27 +287,15 @@ public class CircusBoardManager : MonoBehaviour
 
     private int ParseDiceFace(string face)
     {
-        int value;
-        if (int.TryParse(face, out value))
+        if (int.TryParse(face, out int value))
         {
+            // Clamp between 1 and 6
+            value = Mathf.Clamp(value, 1, 6);
             return value;
         }
 
-        // If side names are like "Side_1", "Side6", etc., extract digits
-        string digits = "";
-        foreach (char c in face)
-        {
-            if (char.IsDigit(c))
-            {
-                digits += c;
-            }
-        }
-
-        if (!string.IsNullOrEmpty(digits) && int.TryParse(digits, out value))
-        {
-            return value;
-        }
-
+        // If something went wrong, log and return 0 (invalid)
+        Debug.LogWarning($"Could not parse dice face '{face}'");
         return 0;
     }
 }

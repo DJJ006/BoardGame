@@ -7,8 +7,8 @@ public class DiceRollCript : MonoBehaviour
     private Rigidbody rBody;
     private Vector3 position, startPosition;
 
-    [SerializeField] private float maxRandForceVal = 10f;
-    [SerializeField] private float startRollingForce = 1200f;
+    [SerializeField] private float maxRandForceVal = 100f;
+    [SerializeField] private float startRollingForce = 1600f;
 
     public string diceFaceNum;
     public bool isLanded = false;

@@ -183,6 +183,7 @@ GameObject:
   - component: {fileID: 2058624730334000592}
   - component: {fileID: 2610740606188284334}
   - component: {fileID: 5848133068241537802}
+  - component: {fileID: 8204263018337866308}
   m_Layer: 0
   m_Name: FallenAngel2
   m_TagString: Untagged
@@ -199,7 +200,7 @@ Transform:
   m_GameObject: {fileID: 3047672186513465889}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 46.18925, y: 47, z: -194.46661}
+  m_LocalPosition: {x: 46.18925, y: 65, z: -194.46661}
   m_LocalScale: {x: 15, y: 15, z: 0}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -291,3 +292,18 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &8204263018337866308
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3047672186513465889}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b830c63130266c449666b657846ddd7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  isAIControlled: 0
+  PlayerIndex: 0
+  BoardIndex: 0

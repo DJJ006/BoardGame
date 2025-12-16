@@ -183,6 +183,7 @@ GameObject:
   - component: {fileID: 8720777395129681179}
   - component: {fileID: 462868905654985278}
   - component: {fileID: 8145069235961730231}
+  - component: {fileID: -904591597551350045}
   m_Layer: 0
   m_Name: EvilManPlayer
   m_TagString: Untagged
@@ -199,7 +200,7 @@ Transform:
   m_GameObject: {fileID: 6838149262420239891}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 23.905304, y: 73, z: -118.93182}
+  m_LocalPosition: {x: 23.905304, y: 65, z: -118.93182}
   m_LocalScale: {x: 15, y: 15, z: 0}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -291,3 +292,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b1a83e98e29388b4aa8bce8ab790b357, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &-904591597551350045
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6838149262420239891}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b830c63130266c449666b657846ddd7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  isAIControlled: 0
+  PlayerIndex: 0
+  BoardIndex: 0
