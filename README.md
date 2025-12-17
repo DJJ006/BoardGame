@@ -33,7 +33,7 @@ This project is a turn-based board game made in Unity. Players move tokens along
 - Character selection.
 - Pause menu with resume / quit.
 - Basic audio feedback via `SoundEffectsScript`.
-- Leaderboard and persistent save data.
+- Leaderboard working while game is open.
 
 ---
 
@@ -44,8 +44,8 @@ This project is a turn-based board game made in Unity. Players move tokens along
 1. Go to the GitHub repository:  
    <https://github.com/DJJ006/BoardGame>
 2. Navigate to the **Releases** section (right sidebar or `Releases` tab).
-3. Download the latest build for your platform (e.g. `Windows.zip`).
-4. Extract the archive to any folder.
+3. Download the latest build for your platform.
+4. Extract the archive.
 5. Run the executable (e.g. `BoardGame.exe`).
 
 ---
