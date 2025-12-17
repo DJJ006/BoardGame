@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using TMPro;
+using UnityEngine.UI;
 
 public class CircusBoardManager : MonoBehaviour
 {
@@ -18,11 +19,24 @@ public class CircusBoardManager : MonoBehaviour
     public SoundEffectsScript soundEffects;
 
     [Header("Win UI")]
-    public GameObject winPanel;          // assign panel in scene
+    public GameObject winPanel;
     public TMP_Text winMessageText;
     public TMP_Text winTimeText;
     public TMP_Text winMovesText;
     public TMP_Text winPointsText;
+
+    [Header("Turn UI")]
+    public TMP_Text currentPlayerText;
+    public Image currentPlayerIcon;
+
+    [Header("Player Icon Colors")]
+    public Color player1Color = Color.red;
+    public Color player2Color = Color.blue;
+    public Color player3Color = Color.green;
+    public Color player4Color = Color.yellow;
+
+    [Header("Timer UI")]
+    public TMP_Text timerText;           // assign in game scene
 
     private int _currentPlayerIndex;
     private bool _isProcessingTurn;
@@ -30,7 +44,7 @@ public class CircusBoardManager : MonoBehaviour
     private bool[] _skipNextTurn;
 
     private int _totalDiceRolls;
-    private float _elapsedTime;
+    private float _elapsedTime;          // total seconds since game start
 
     private void Awake()
     {
@@ -51,9 +65,13 @@ public class CircusBoardManager : MonoBehaviour
 
         _skipNextTurn = new bool[players.Count];
 
+        // assign per-player icon colors
         for (int i = 0; i < players.Count; i++)
         {
+            Color c = GetColorForPlayerIndex(i);
+            players[i].iconColor = c;
             players[i].Initialize(this, i);
+            players[i].SetIconActive(i == 0); // only first player active at start
             MovePlayerToIndex(i, 0, instant: true);
         }
 
@@ -62,6 +80,21 @@ public class CircusBoardManager : MonoBehaviour
         _gameOver = false;
         _totalDiceRolls = 0;
         _elapsedTime = 0f;
+
+        UpdateCurrentPlayerText();
+        UpdateTimerText();  // start at 00:00
+    }
+
+    private Color GetColorForPlayerIndex(int index)
+    {
+        switch (index)
+        {
+            case 0: return player1Color;
+            case 1: return player2Color;
+            case 2: return player3Color;
+            case 3: return player4Color;
+            default: return Color.white;
+        }
     }
 
     private void Update()
@@ -69,6 +102,7 @@ public class CircusBoardManager : MonoBehaviour
         if (!_gameOver)
         {
             _elapsedTime += Time.deltaTime;
+            UpdateTimerText();
         }
 
         if (_gameOver || diceRoll == null)
@@ -79,6 +113,17 @@ public class CircusBoardManager : MonoBehaviour
             _isProcessingTurn = false;
             HandleDiceResultForCurrentPlayer();
         }
+    }
+
+    private void UpdateTimerText()
+    {
+        if (timerText == null)
+            return;
+
+        int totalSeconds = Mathf.FloorToInt(_elapsedTime);
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+        timerText.text = $"{minutes:00}:{seconds:00}";
     }
 
     public void OnRollButtonPressed()
@@ -259,11 +304,22 @@ public class CircusBoardManager : MonoBehaviour
         if (_gameOver)
             return;
 
+        // disable old player's icon highlight
+        if (players != null && players.Count > 0)
+        {
+            players[_currentPlayerIndex].SetIconActive(false);
+        }
+
         _currentPlayerIndex = (_currentPlayerIndex + 1) % players.Count;
 
+        // enable new current player's icon highlight
+        if (players != null && players.Count > 0)
+        {
+            players[_currentPlayerIndex].SetIconActive(true);
+        }
+
         Debug.Log($"Next player: {_currentPlayerIndex}");
-        // Optionally, auto-roll for AI, wait for UI click for human, etc.
-        // For now, you manually call OnRollButtonPressed() from UI.
+        UpdateCurrentPlayerText();
     }
 
     private void HandleWin(int playerIndex)
@@ -283,12 +339,40 @@ public class CircusBoardManager : MonoBehaviour
 
         if (soundEffects != null)
         {
-            // play dedicated win clip instead of generic button
             soundEffects.PlayWin();
         }
 
         ShowWinPanel(playerIndex);
         SaveWinnerToLeaderboard(playerIndex);
+
+        if (currentPlayerText != null)
+        {
+            currentPlayerText.text = string.Empty;
+        }
+
+        if (currentPlayerIcon != null)
+        {
+            currentPlayerIcon.enabled = false;
+        }
+    }
+
+    private void UpdateCurrentPlayerText()
+    {
+        if (players == null || players.Count == 0)
+            return;
+
+        if (currentPlayerText != null)
+        {
+            PlayerToken current = players[_currentPlayerIndex];
+            string name = current != null ? current.name : $"Player {_currentPlayerIndex + 1}";
+            currentPlayerText.text = $"{name} turn";
+        }
+
+        if (currentPlayerIcon != null)
+        {
+            currentPlayerIcon.enabled = true;
+            currentPlayerIcon.color = GetColorForPlayerIndex(_currentPlayerIndex);
+        }
     }
 
     private void ShowWinPanel(int playerIndex)

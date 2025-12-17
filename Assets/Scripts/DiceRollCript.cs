@@ -7,14 +7,15 @@ public class DiceRollCript : MonoBehaviour
     private Rigidbody rBody;
     private Vector3 position, startPosition;
 
-    [SerializeField] private float maxRandForceVal = 100f;
-    [SerializeField] private float startRollingForce = 1600f;
+    // Still snappy, but more controlled
+    [SerializeField] private float maxRandForceVal = 600f;    // spin
+    [SerializeField] private float launchForce = 2000f;       // overall strength
 
     public string diceFaceNum;
     public bool isLanded = false;
     public bool firstThrow = false;
 
-    public SoundEffectsScript soundEffects;   // assign in inspector (same as CircusBoardManager.soundEffects)
+    public SoundEffectsScript soundEffects;
 
     private void Awake()
     {
@@ -28,6 +29,9 @@ public class DiceRollCript : MonoBehaviour
         rBody.isKinematic = true;
         position = transform.position;
         transform.rotation = Random.rotation;
+
+        rBody.drag = 0.05f;
+        rBody.angularDrag = 0.02f;
     }
 
     private void RollDiceInternal()
@@ -36,18 +40,27 @@ public class DiceRollCript : MonoBehaviour
             return;
 
         rBody.isKinematic = false;
-        float forceX = Random.Range(0, maxRandForceVal);
-        float forceY = Random.Range(0, maxRandForceVal);
-        float forceZ = Random.Range(0, maxRandForceVal);
 
-        // play dice‑throw sound just as we launch it into the air
+        // strong random spin
+        float torqueX = Random.Range(-maxRandForceVal, maxRandForceVal);
+        float torqueY = Random.Range(-maxRandForceVal, maxRandForceVal);
+        float torqueZ = Random.Range(-maxRandForceVal, maxRandForceVal);
+
+        // mostly upward, with only a *small* horizontal component
+        float horizRange = 0.25f; // clamp sideways movement
+        Vector3 dir = new Vector3(
+            Random.Range(-horizRange, horizRange),  // small left/right
+            Random.Range(0.6f, 1.0f),               // strong up
+            Random.Range(-horizRange, horizRange)); // small forward/back
+        dir.Normalize();
+
         if (soundEffects != null)
         {
             soundEffects.PlayDiceHit();
         }
 
-        rBody.AddForce(Vector3.up * Random.Range(800, startRollingForce));
-        rBody.AddTorque(forceX, forceY, forceZ);
+        rBody.AddForce(dir * launchForce, ForceMode.Impulse);
+        rBody.AddTorque(new Vector3(torqueX, torqueY, torqueZ), ForceMode.Impulse);
     }
 
     public void ResetDice()
@@ -58,9 +71,6 @@ public class DiceRollCript : MonoBehaviour
         Initialize();
     }
 
-    /// <summary>
-    /// Public method to trigger a roll (used by AI or UI button).
-    /// </summary>
     public void RollNow()
     {
         firstThrow = true;
@@ -73,31 +83,23 @@ public class DiceRollCript : MonoBehaviour
         if (rBody == null)
             return;
 
-        // Mouse-controlled rolling
         if (Input.GetMouseButtonDown(0))
         {
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            RaycastHit hit;
-            if (Physics.Raycast(ray, out hit))
+            if (Physics.Raycast(ray, out var hit) && hit.collider != null && hit.collider.gameObject == this.gameObject)
             {
-                if (hit.collider != null && hit.collider.gameObject == this.gameObject)
+                if (!firstThrow || isLanded)
                 {
-                    // Only allow new roll if dice has landed or this is first throw
-                    if (!firstThrow || isLanded)
-                    {
-                        if (!firstThrow)
-                            firstThrow = true;
+                    if (!firstThrow)
+                        firstThrow = true;
 
-                        isLanded = false;
-                        RollDiceInternal();
-                    }
+                    isLanded = false;
+                    RollDiceInternal();
                 }
             }
         }
     }
 
-    // still used by SideDetectScript to tell the logic that dice stopped,
-    // but we no longer play the impact sound here
     public void OnDiceLanded()
     {
         isLanded = true;

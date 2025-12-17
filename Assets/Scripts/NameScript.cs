@@ -5,16 +5,39 @@ using TMPro;
 
 public class NameScript : MonoBehaviour
 {
-    TextMeshPro tMP;
-    void Awake()
+    public Color nameColor = Color.white;
+
+    private TMP_Text tmp;
+
+    private void Awake()
     {
-        tMP = transform.Find("NameField").gameObject.GetComponent<TextMeshPro>();
+        Transform nameField = transform.Find("NameField");
+        if (nameField != null)
+        {
+            tmp = nameField.GetComponent<TMP_Text>();
+        }
+
+        if (tmp == null)
+        {
+            tmp = GetComponent<TMP_Text>();
+        }
+
+        if (tmp == null)
+        {
+            Debug.LogError("NameScript: No TMP_Text found on or under this object. Please add a TextMeshPro component.");
+        }
     }
 
-    // Update is called once per frame
     public void SetName(string name)
     {
-        tMP.text = name;
-        tMP.color = new Color32((byte)Random.Range(0, 255), (byte)Random.Range(0, 255), (byte)Random.Range(0, 255), 255);
+        if (tmp == null) return;
+
+        tmp.text = name;
+
+        // Example: fixed yellow color
+        //tmp.color = new Color32(255, 230, 0, 255);
+
+        // OR use Color:
+        tmp.color = nameColor;
     }
 }

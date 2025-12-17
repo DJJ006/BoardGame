@@ -10,6 +10,10 @@ public class PlayerToken : MonoBehaviour
     private CircusBoardManager _boardManager;
     private Animator _animator;
 
+    [Header("Player Icon")]
+    public SpriteRenderer iconRenderer;   // world-space icon above head
+    public Color iconColor = Color.white; // per-player color, set by GameSceneSetup
+
     // Make sure this type matches the component you drag in the Inspector
     public SoundEffectsScript soundEffects;
 
@@ -30,10 +34,10 @@ public class PlayerToken : MonoBehaviour
         PlayerIndex = playerIndex;
         EnsureAnimator();
 
-        // if not set from prefab, try to auto‑find shared SoundEffectsScript
-        if (soundEffects == null)
+        // apply icon color (set from GameSceneSetup)
+        if (iconRenderer != null)
         {
-            soundEffects = FindObjectOfType<SoundEffectsScript>();
+            iconRenderer.color = iconColor;
         }
     }
 
@@ -219,6 +223,15 @@ public class PlayerToken : MonoBehaviour
         if (soundEffects != null)
         {
             soundEffects.PlayWalkStep();
+        }
+    }
+
+    // called by CircusBoardManager when turn changes
+    public void SetIconActive(bool active)
+    {
+        if (iconRenderer != null)
+        {
+            iconRenderer.enabled = active;
         }
     }
 }
