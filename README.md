@@ -67,20 +67,25 @@ This project is a turn-based board game made in Unity. Players move tokens along
 
 ## Main menu
 
+<img width="514" height="291" alt="MainMenu" src="https://github.com/user-attachments/assets/1856abfb-11cf-49ab-b232-425a3ed998ec" />
 
 ---
 ## Leaderboard
 
+<img width="514" height="291" alt="Leaderboard" src="https://github.com/user-attachments/assets/a998d52a-3f90-4842-9bdb-cdbaa98e6792" />
 
 ---
 ## Settings
 
+<img width="514" height="291" alt="Settings" src="https://github.com/user-attachments/assets/3ce55085-4831-4ab4-90ff-68b9c4d9717f" />
 
 ---
 ## Game
 
+<img width="514" height="291" alt="Game" src="https://github.com/user-attachments/assets/fd2fec8a-84eb-4816-88a5-c170eff2901b" />
 
 ---
 ## Win panel
 
+<img width="514" height="291" alt="WinPanel" src="https://github.com/user-attachments/assets/96fb6ab6-2ca9-4e22-9d36-d07358572522" />
 
